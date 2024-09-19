@@ -122,7 +122,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/frp/frp_${FRP_VERSION}_linux_amd64/frpc -c /usr/local/frp/frp_${FRP_VERSION}_linux_amd64/frpc.toml
+ExecStart=/bin/bash -c 'until ping -c1 103.77.166.69; do sleep 1; done; /usr/local/frp/frp_0.60.0_linux_amd64/frpc -c /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml'
 Restart=on-failure
 
 [Install]
