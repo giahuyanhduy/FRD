@@ -8,8 +8,18 @@ FRP_USER="duyhuynh"
 FRP_PASS="Anhduy3112"
 API_SERVER="http://103.77.166.69"
 
-# Lấy tên máy (hostname) của client
-HOSTNAME=$(hostname)
+# Lấy tên máy (hostname) từ file /opt/autorun bằng cách tìm chuỗi *****:localhost:22
+if [ -f "/opt/autorun" ]; then
+    HOSTNAME=$(grep -oP '\d{4,5}(?=:localhost:22)' /opt/autorun)
+else
+    HOSTNAME=$(hostname)  # Nếu không tìm thấy file /opt/autorun, sử dụng hostname mặc định
+fi
+
+# Kiểm tra nếu không tìm được HOSTNAME
+if [ -z "$HOSTNAME" ]; then
+    echo "Không tìm thấy hostname trong /opt/autorun, sử dụng hostname mặc định."
+    HOSTNAME=$(hostname)
+fi
 
 # Lấy danh sách các cổng đã sử dụng từ server qua file JSON
 USED_PORTS=$(curl -s $API_SERVER/used_ports | jq -r '.used_ports[]')
