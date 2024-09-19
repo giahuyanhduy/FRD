@@ -3,7 +3,7 @@
 # Cài đặt thông tin của client
 FRP_VERSION="0.60.0"
 SERVER_IP="103.77.166.69"
-LOCAL_PORT=8080
+LOCAL_PORT=1080
 FRP_USER="duyhuynh"
 FRP_PASS="Anhduy3112"
 API_SERVER="http://103.77.166.69"
