@@ -41,6 +41,7 @@ tar -xvzf frp_${FRP_VERSION}_linux_amd64.tar.gz
 rm frp_${FRP_VERSION}_linux_amd64.tar.gz
 
 # Tạo file cấu hình frpc.toml
+echo "Creating frpc.toml file..."
 cat <<EOT > frpc.toml
 [common]
 server_addr = $SERVER_IP
@@ -56,6 +57,12 @@ http_user = $FRP_USER
 http_passwd = $FRP_PASS
 EOT
 
+# Kiểm tra xem file đã được tạo chưa
+if [ -f "frpc.toml" ]; then
+    echo "frpc.toml created successfully."
+else
+    echo "Failed to create frpc.toml."
+fi
 # Tạo file dịch vụ systemd cho FRP client
 cat <<EOT > /etc/systemd/system/frpc.service
 [Unit]
