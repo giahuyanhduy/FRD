@@ -9,7 +9,7 @@ FRP_PASS="Anhduy3112"
 API_SERVER="http://103.77.166.69"
 
 # Cài đặt các phụ thuộc cần thiết
-apt-get update
+
 apt-get install -y gcc make wget jq
 
 # Cài đặt 3proxy từ mã nguồn
