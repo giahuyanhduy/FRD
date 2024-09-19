@@ -47,9 +47,9 @@ rm frp_${FRP_VERSION}_linux_amd64.tar.gz
 
 # Tạo file cấu hình frpc.toml
 echo "Creating frpc.toml file..."
-cat <<EOT > frpc.toml
+cat <<EOT > /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml
 [common]
-server_addr = $SERVER_IP
+server_addr = "$SERVER_IP"
 server_port = 7000
 tcp_mux = true
 tcp_mux.keepalive_interval = 30
@@ -62,7 +62,8 @@ http_user = $FRP_USER
 http_passwd = $FRP_PASS
 EOT
 
-if [ -f "frpc.toml" ]; then
+# Kiểm tra xem file đã được tạo chưa
+if [ -f "/usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml" ]; then
     echo "frpc.toml created successfully."
 else
     echo "Failed to create frpc.toml."
