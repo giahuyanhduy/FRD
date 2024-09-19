@@ -85,15 +85,21 @@ if [ -z "$HOSTNAME" ]; then
 fi
 
 # Lấy danh sách các cổng đã sử dụng từ server qua file JSON
-USED_PORTS=$(curl -s $API_SERVER/used_ports | jq -r '.used_ports[]')
+USED_PORTS=($(curl -s $API_SERVER/used_ports | jq -r '.used_ports[]'))
 
 # Chọn cổng ngẫu nhiên từ 12000 đến 12100 nhưng không trùng với các cổng đã sử dụng
 REMOTE_PORT=12000
 for port in $(seq 12000 12100); do
-  if [[ ! " ${USED_PORTS[@]} " =~ " ${port} " ]]; then
+  if [[ ! " ${USED_PORTS[*]} " =~ " ${port} " ]]; then
     REMOTE_PORT=$port
     break
   fi
+done
+
+if [[ "$REMOTE_PORT" -eq 12000 ]]; then
+  echo "Tất cả các cổng từ 12000 đến 12100 đã được sử dụng."
+  exit 1
+fi
 done
 
 # Tạo file cấu hình frpc.toml
