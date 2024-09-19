@@ -19,7 +19,7 @@ cd 3proxy-0.9.3
 make -f Makefile.Linux
 
 # Sao chép file nhị phân vào thư mục hệ thống
-sudo cp 3proxy /usr/local/bin/
+sudo cp bin/3proxy /usr/local/bin/
 cd ..
 
 # Tạo thư mục cấu hình 3proxy nếu chưa tồn tại
