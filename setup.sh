@@ -1,5 +1,5 @@
 #!/bin/bash
-
+echo "ver 1.0.5"
 # Cài đặt thông tin của client
 FRP_VERSION="0.60.0"
 SERVER_IP="103.77.166.69"
