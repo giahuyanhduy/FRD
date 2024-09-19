@@ -10,7 +10,7 @@ wget https://raw.githubusercontent.com/giahuyanhduy/FRD/main/client.json -O clie
 
 # Đặt đường dẫn tới token và client_secret.json
 TOKEN_PATH="token.json"  # Token sẽ được tạo tự động khi lần đầu xác thực
-CLIENT_SECRET_PATH="client.json"
+CLIENT_SECRET_PATH="/root/client.json"
 
 # Cài đặt thông tin Google Sheets API
 SPREADSHEET_ID="1Qpvk0UCJm4CRT3xTonuIduD5BT1CD2lt926JZo8iD-I"
