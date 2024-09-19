@@ -93,7 +93,7 @@ done
 
 # Tạo file cấu hình frpc.toml
 echo "Tạo file cấu hình frpc.toml..."
-cat <<EOT > /usr/local/frp/frp_0.60.0_linux_amd64/frpc/frpc.toml
+cat <<EOT > /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml
 [common]
 server_addr = "$SERVER_IP"
 server_port = 7000
@@ -117,7 +117,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/frp/frp_0.60.0_linux_amd64/frpc -c /usr/local/frp/frpc/frpc.toml
+ExecStart=/usr/local/frp/frp_0.60.0_linux_amd64/frpc -c /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml
 Restart=on-failure
 
 [Install]
