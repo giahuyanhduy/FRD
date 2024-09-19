@@ -105,7 +105,7 @@ server_port = 7000
 tcp_mux = true
 tcp_mux.keepalive_interval = 30
 
-[proxy]
+[$HOSTNAME]
 type = tcp
 local_port = $LOCAL_PORT
 remote_port = $REMOTE_PORT
