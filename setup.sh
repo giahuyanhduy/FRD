@@ -40,8 +40,8 @@ wget https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP
 tar -xvzf frp_${FRP_VERSION}_linux_amd64.tar.gz
 rm frp_${FRP_VERSION}_linux_amd64.tar.gz
 
-# Tạo file cấu hình frpc.ini
-cat <<EOT > frpc.ini
+# Tạo file cấu hình frpc.toml
+cat <<EOT > frpc.toml
 [common]
 server_addr = $SERVER_IP
 server_port = 7000
@@ -64,7 +64,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/frp/frpc -c /usr/local/frp/frpc.ini
+ExecStart=/usr/local/frp/frpc -c /usr/local/frp/frpc.toml
 Restart=on-failure
 
 [Install]
