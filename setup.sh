@@ -94,7 +94,7 @@ for port in $(seq 12000 12100); do
     REMOTE_PORT=$port
     break
   fi
-done
+
 
 if [[ "$REMOTE_PORT" -eq 12000 ]]; then
   echo "Tất cả các cổng từ 12000 đến 12100 đã được sử dụng."
