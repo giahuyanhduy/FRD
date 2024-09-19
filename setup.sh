@@ -8,9 +8,63 @@ FRP_USER="duyhuynh"
 FRP_PASS="Anhduy3112"
 API_SERVER="http://103.77.166.69"
 
-# Cài đặt jq nếu chưa có
-echo "Installing jq..."
-apt-get install -y jq 
+# Cài đặt các phụ thuộc cần thiết
+apt-get update
+apt-get install -y gcc make wget jq
+
+# Cài đặt 3proxy từ mã nguồn
+wget https://github.com/z3APA3A/3proxy/archive/refs/tags/0.9.3.tar.gz
+tar -xvzf 0.9.3.tar.gz
+cd 3proxy-0.9.3
+make -f Makefile.Linux
+sudo make install
+cd ..
+
+# Cấu hình 3proxy
+echo "Tạo file cấu hình 3proxy..."
+cat <<EOT | sudo tee /etc/3proxy/3proxy.cfg
+nserver 8.8.8.8
+nserver 8.8.4.4
+
+# Đặt thông tin xác thực
+users duyhuynh:CL:Anhduy3112
+
+# Bật xác thực
+auth strong
+
+# Cho phép tất cả các kết nối
+allow * 
+
+# Cấu hình proxy SOCKS5
+socks -p1080
+EOT
+
+# Tạo file dịch vụ systemd cho 3proxy
+echo "Tạo dịch vụ systemd cho 3proxy..."
+cat <<EOT | sudo tee /etc/systemd/system/3proxy.service
+[Unit]
+Description=3proxy Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/3proxy /etc/3proxy/3proxy.cfg
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOT
+
+# Khởi động và kích hoạt dịch vụ 3proxy
+sudo systemctl daemon-reload
+sudo systemctl enable 3proxy
+sudo systemctl start 3proxy
+
+# Cài đặt FRP client
+mkdir -p /usr/local/frp
+cd /usr/local/frp
+wget https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_amd64.tar.gz
+tar -xvzf frp_${FRP_VERSION}_linux_amd64.tar.gz
+rm frp_${FRP_VERSION}_linux_amd64.tar.gz
 
 # Lấy tên máy (hostname) từ file /opt/autorun
 if [ -f "/opt/autorun" ]; then
@@ -19,16 +73,16 @@ else
     HOSTNAME=$(hostname)
 fi
 
+# Kiểm tra nếu không tìm được HOSTNAME
 if [ -z "$HOSTNAME" ]; then
-    echo "No hostname found in /opt/autorun, using default hostname."
+    echo "Không tìm thấy hostname trong /opt/autorun, sử dụng hostname mặc định."
     HOSTNAME=$(hostname)
 fi
 
 # Lấy danh sách các cổng đã sử dụng từ server qua file JSON
-echo "Fetching used ports from server..."
 USED_PORTS=$(curl -s $API_SERVER/used_ports | jq -r '.used_ports[]')
 
-# Chọn cổng không trùng với các cổng đã sử dụng
+# Chọn cổng ngẫu nhiên từ 12000 đến 12100 nhưng không trùng với các cổng đã sử dụng
 REMOTE_PORT=12000
 for port in $(seq 12000 12100); do
   if [[ ! " ${USED_PORTS[@]} " =~ " ${port} " ]]; then
@@ -37,17 +91,9 @@ for port in $(seq 12000 12100); do
   fi
 done
 
-# Cài đặt FRP client
-echo "Installing FRP client..."
-mkdir -p /usr/local/frp
-cd /usr/local/frp
-wget https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_amd64.tar.gz
-tar -xvzf frp_${FRP_VERSION}_linux_amd64.tar.gz
-rm frp_${FRP_VERSION}_linux_amd64.tar.gz
-
 # Tạo file cấu hình frpc.toml
-echo "Creating frpc.toml file..."
-cat <<EOT > /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml
+echo "Tạo file cấu hình frpc.toml..."
+cat <<EOT > /usr/local/frp/frp_0.60.0_linux_amd64/frpc/frpc.toml
 [common]
 server_addr = "$SERVER_IP"
 server_port = 7000
@@ -55,31 +101,23 @@ tcp_mux = true
 tcp_mux.keepalive_interval = 30
 
 [proxy]
-type = http
+type = tcp
 local_port = $LOCAL_PORT
 remote_port = $REMOTE_PORT
-http_user = $FRP_USER
-http_passwd = $FRP_PASS
+http_user = "$FRP_USER"
+http_passwd = "$FRP_PASS"
 EOT
 
-# Kiểm tra xem file đã được tạo chưa
-if [ -f "/usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml" ]; then
-    echo "frpc.toml created successfully."
-else
-    echo "Failed to create frpc.toml."
-    exit 1
-fi
-
 # Tạo file dịch vụ systemd cho FRP client
-echo "Creating systemd service file..."
-cat <<EOT > /etc/systemd/system/frpc.service
+echo "Tạo dịch vụ systemd cho FRP client..."
+cat <<EOT | sudo tee /etc/systemd/system/frpc.service
 [Unit]
 Description=FRP Client Service
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/frp/frp_0.60.0_linux_amd64/ -c /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml
+ExecStart=/usr/local/frp/frp_0.60.0_linux_amd64/frpc -c /usr/local/frp/frpc/frpc.toml
 Restart=on-failure
 
 [Install]
@@ -87,13 +125,12 @@ WantedBy=multi-user.target
 EOT
 
 # Kích hoạt và khởi động dịch vụ FRP
-echo "Reloading systemd and starting FRP service..."
-systemctl daemon-reload
-systemctl enable frpc
-systemctl start frpc
+sudo systemctl daemon-reload
+sudo systemctl enable frpc
+sudo systemctl start frpc
 
 # Gửi thông tin client lên API server
-echo "Sending client info to server..."
+echo "Gửi thông tin client lên server..."
 curl -X POST $API_SERVER/client_data \
 -H "Content-Type: application/json" \
 -d '{
@@ -102,4 +139,4 @@ curl -X POST $API_SERVER/client_data \
     "local_port": '"$LOCAL_PORT"'
 }'
 
-echo "Client info sent successfully!"
+echo "Thông tin client đã được gửi thành công!"
