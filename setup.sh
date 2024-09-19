@@ -8,19 +8,17 @@ FRP_USER="duyhuynh"
 FRP_PASS="Anhduy3112"
 API_SERVER="http://103.77.166.69"
 
-# Cài đặt jq
+# Cài đặt jq nếu chưa có
 echo "Installing jq..."
 apt-get install -y jq 
 
 # Lấy tên máy (hostname) từ file /opt/autorun
-echo "Checking hostname..."
 if [ -f "/opt/autorun" ]; then
     HOSTNAME=$(grep -oP '\d{4,5}(?=:localhost:22)' /opt/autorun)
 else
     HOSTNAME=$(hostname)
 fi
 
-# Kiểm tra nếu không tìm được HOSTNAME
 if [ -z "$HOSTNAME" ]; then
     echo "No hostname found in /opt/autorun, using default hostname."
     HOSTNAME=$(hostname)
@@ -64,7 +62,6 @@ http_user = $FRP_USER
 http_passwd = $FRP_PASS
 EOT
 
-# Kiểm tra xem file đã được tạo chưa
 if [ -f "frpc.toml" ]; then
     echo "frpc.toml created successfully."
 else
