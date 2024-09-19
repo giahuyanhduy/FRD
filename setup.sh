@@ -7,24 +7,30 @@ LOCAL_PORT=8080
 FRP_USER="duyhuynh"
 FRP_PASS="Anhduy3112"
 API_SERVER="http://103.77.166.69"
+
+# Cài đặt jq
+echo "Installing jq..."
 apt-get install -y jq 
-# Lấy tên máy (hostname) từ file /opt/autorun bằng cách tìm chuỗi *****:localhost:22
+
+# Lấy tên máy (hostname) từ file /opt/autorun
+echo "Checking hostname..."
 if [ -f "/opt/autorun" ]; then
     HOSTNAME=$(grep -oP '\d{4,5}(?=:localhost:22)' /opt/autorun)
 else
-    HOSTNAME=$(hostname)  # Nếu không tìm thấy file /opt/autorun, sử dụng hostname mặc định
+    HOSTNAME=$(hostname)
 fi
 
 # Kiểm tra nếu không tìm được HOSTNAME
 if [ -z "$HOSTNAME" ]; then
-    echo "Không tìm thấy hostname trong /opt/autorun, sử dụng hostname mặc định."
+    echo "No hostname found in /opt/autorun, using default hostname."
     HOSTNAME=$(hostname)
 fi
 
 # Lấy danh sách các cổng đã sử dụng từ server qua file JSON
+echo "Fetching used ports from server..."
 USED_PORTS=$(curl -s $API_SERVER/used_ports | jq -r '.used_ports[]')
 
-# Chọn cổng ngẫu nhiên từ 12000 đến 12100 nhưng không trùng với các cổng đã sử dụng
+# Chọn cổng không trùng với các cổng đã sử dụng
 REMOTE_PORT=12000
 for port in $(seq 12000 12100); do
   if [[ ! " ${USED_PORTS[@]} " =~ " ${port} " ]]; then
@@ -34,6 +40,7 @@ for port in $(seq 12000 12100); do
 done
 
 # Cài đặt FRP client
+echo "Installing FRP client..."
 mkdir -p /usr/local/frp
 cd /usr/local/frp
 wget https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_amd64.tar.gz
@@ -62,8 +69,11 @@ if [ -f "frpc.toml" ]; then
     echo "frpc.toml created successfully."
 else
     echo "Failed to create frpc.toml."
+    exit 1
 fi
+
 # Tạo file dịch vụ systemd cho FRP client
+echo "Creating systemd service file..."
 cat <<EOT > /etc/systemd/system/frpc.service
 [Unit]
 Description=FRP Client Service
@@ -79,13 +89,13 @@ WantedBy=multi-user.target
 EOT
 
 # Kích hoạt và khởi động dịch vụ FRP
+echo "Reloading systemd and starting FRP service..."
 systemctl daemon-reload
 systemctl enable frpc
 systemctl start frpc
 
-# Gửi thông tin client lên API server tại 103.77.166.69
+# Gửi thông tin client lên API server
 echo "Sending client info to server..."
-
 curl -X POST $API_SERVER/client_data \
 -H "Content-Type: application/json" \
 -d '{
