@@ -17,17 +17,17 @@ wget https://github.com/3proxy/3proxy/archive/refs/tags/0.9.3.tar.gz
 tar -xvzf 0.9.3.tar.gz
 cd 3proxy-0.9.3
 make -f Makefile.Linux
+sudo make install
 
 # Sao chép file nhị phân vào thư mục hệ thống
 sudo cp bin/3proxy /usr/local/bin/
 cd ..
 
-# Tạo thư mục cấu hình 3proxy nếu chưa tồn tại
-sudo mkdir -p /etc/3proxy
+
 
 # Cấu hình 3proxy
 echo "Tạo file cấu hình 3proxy..."
-cat <<EOT | sudo tee /etc/3proxy/3proxy.cfg
+cat <<EOT | sudo tee /etc/3proxy.cfg
 nserver 8.8.8.8
 nserver 8.8.4.4
 
@@ -52,7 +52,7 @@ Description=3proxy Service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/3proxy /etc/3proxy/3proxy.cfg
+ExecStart=/usr/local/bin/3proxy /etc/3proxy.cfg
 Restart=on-failure
 
 [Install]
