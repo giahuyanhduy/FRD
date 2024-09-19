@@ -9,16 +9,19 @@ FRP_PASS="Anhduy3112"
 API_SERVER="http://103.77.166.69"
 
 # Cài đặt các phụ thuộc cần thiết
-
+apt-get update
 apt-get install -y gcc make wget jq
 
 # Cài đặt 3proxy từ mã nguồn
-wget https://github.com/z3APA3A/3proxy/archive/refs/tags/0.9.3.tar.gz
+wget https://github.com/3proxy/3proxy/archive/refs/tags/0.9.3.tar.gz
 tar -xvzf 0.9.3.tar.gz
 cd 3proxy-0.9.3
 make -f Makefile.Linux
 sudo make install
 cd ..
+
+# Tạo thư mục cấu hình 3proxy nếu chưa tồn tại
+sudo mkdir -p /etc/3proxy
 
 # Cấu hình 3proxy
 echo "Tạo file cấu hình 3proxy..."
@@ -93,7 +96,7 @@ done
 
 # Tạo file cấu hình frpc.toml
 echo "Tạo file cấu hình frpc.toml..."
-cat <<EOT > /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml
+cat <<EOT > /usr/local/frp/frp_${FRP_VERSION}_linux_amd64/frpc.toml
 [common]
 server_addr = "$SERVER_IP"
 server_port = 7000
@@ -117,7 +120,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/frp/frp_0.60.0_linux_amd64/frpc -c /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml
+ExecStart=/usr/local/frp/frp_${FRP_VERSION}_linux_amd64/frpc -c /usr/local/frp/frp_${FRP_VERSION}_linux_amd64/frpc.toml
 Restart=on-failure
 
 [Install]
