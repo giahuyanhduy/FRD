@@ -17,7 +17,9 @@ wget https://github.com/3proxy/3proxy/archive/refs/tags/0.9.3.tar.gz
 tar -xvzf 0.9.3.tar.gz
 cd 3proxy-0.9.3
 make -f Makefile.Linux
-sudo make install
+
+# Sao chép file nhị phân vào thư mục hệ thống
+sudo cp 3proxy /usr/local/bin/
 cd ..
 
 # Tạo thư mục cấu hình 3proxy nếu chưa tồn tại
