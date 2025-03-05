@@ -1,155 +1,96 @@
 #!/bin/bash
-echo "ver 1.0.5"
-# Cài đặt thông tin của client
-FRP_VERSION="0.60.0"
-SERVER_IP="103.77.166.69"
-LOCAL_PORT=1080
-FRP_USER="duyhuynh"
-FRP_PASS="Anhduy3112"
-API_SERVER="http://103.77.166.69"
 
-# Cài đặt các phụ thuộc cần thiết
+# Đường dẫn cài đặt FRPC
+FRP_DIR="/root/frp_0.54.0_linux_amd64"
+FRP_VERSION="0.54.0"
 
-apt-get install -y gcc make wget jq
+# Xác định kiến trúc
+ARCH=$(uname -m)
+case $ARCH in
+    x86_64)
+        FRP_URL="https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_amd64.tar.gz"
+        ;;
+    aarch64)
+        FRP_URL="https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_arm64.tar.gz"
+        ;;
+    armv7l)
+        FRP_URL="https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_arm.tar.gz"
+        ;;
+    *)
+        echo "Kiến trúc $ARCH không hỗ trợ!"
+        exit 1
+        ;;
+esac
 
-# Cài đặt 3proxy từ mã nguồn
-wget https://github.com/3proxy/3proxy/archive/refs/tags/0.9.3.tar.gz
-tar -xvzf 0.9.3.tar.gz
-cd 3proxy-0.9.3
-make -f Makefile.Linux
-sudo make install
+# Xóa FRPC cũ
+[ -d "$FRP_DIR" ] && echo "Xóa FRPC cũ..." && rm -rf "$FRP_DIR"
+[ -f "/opt/start_frpc.sh" ] && echo "Xóa script cũ..." && rm -f "/opt/start_frpc.sh"
+[ -f "/etc/systemd/system/frpc.service" ] && echo "Xóa dịch vụ cũ..." && systemctl stop frpc 2>/dev/null && systemctl disable frpc 2>/dev/null && rm -f "/etc/systemd/system/frpc.service"
 
-# Sao chép file nhị phân vào thư mục hệ thống
-sudo cp bin/3proxy /usr/local/bin/
-cd ..
+# Tải và cài FRPC
+cd /root
+wget -q $FRP_URL -O frp.tar.gz
+tar -xzf frp.tar.gz
+rm frp.tar.gz
+mv frp_${FRP_VERSION}_linux_* $FRP_DIR
+cd $FRP_DIR
+chmod +x frpc
 
-
-
-# Cấu hình 3proxy
-echo "Tạo file cấu hình 3proxy..."
-cat <<EOT | sudo tee /etc/3proxy.cfg
-nserver 8.8.8.8
-nserver 8.8.4.4
-
-# Đặt thông tin xác thực
-users duyhuynh:CL:Anhduy3112
-
-# Bật xác thực
-auth strong
-
-# Cho phép tất cả các kết nối
-allow * 
-
-# Cấu hình proxy SOCKS5
-socks -p1080
-EOT
-
-# Tạo file dịch vụ systemd cho 3proxy
-echo "Tạo dịch vụ systemd cho 3proxy..."
-cat <<EOT | sudo tee /etc/systemd/system/3proxy.service
-[Unit]
-Description=3proxy Service
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/3proxy /etc/3proxy.cfg
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-EOT
-
-# Khởi động và kích hoạt dịch vụ 3proxy
-sudo systemctl daemon-reload
-sudo systemctl enable 3proxy
-sudo systemctl start 3proxy
-
-# Cài đặt FRP client
-mkdir -p /usr/local/frp
-cd /usr/local/frp
-wget https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_amd64.tar.gz
-tar -xvzf frp_${FRP_VERSION}_linux_amd64.tar.gz
-rm frp_${FRP_VERSION}_linux_amd64.tar.gz
-
-# Lấy tên máy (hostname) từ file /opt/autorun
-if [ -f "/opt/autorun" ]; then
-    HOSTNAME=$(grep -oP '\d{4,5}(?=:localhost:22)' /opt/autorun)
-else
-    HOSTNAME=$(hostname)
-fi
-
-# Kiểm tra nếu không tìm được HOSTNAME
-if [ -z "$HOSTNAME" ]; then
-    echo "Không tìm thấy hostname trong /opt/autorun, sử dụng hostname mặc định."
-    HOSTNAME=$(hostname)
-fi
-
-# Lấy danh sách các cổng đã sử dụng từ server qua file JSON
-
-
-# Chọn cổng ngẫu nhiên từ 12000 đến 12100 nhưng không trùng với các cổng đã sử dụng
-USED_PORTS=($(curl -s $API_SERVER/used_ports | jq -r '.used_ports[]'))
-
-# Chọn cổng ngẫu nhiên từ 12000 đến 12100 nhưng không trùng với các cổng đã sử dụng
-REMOTE_PORT=12000
-for port in $(seq 12000 12100); do
-  if [[ ! " ${USED_PORTS[*]} " =~ " ${port} " ]]; then
-    REMOTE_PORT=$port
-    break
-  fi
-done
-
-if [[ "$REMOTE_PORT" -eq 12000 ]]; then
-  echo "Tất cả các cổng từ 12000 đến 12100 đã được sử dụng."
-  exit 1
-fi
-
-# Tạo file cấu hình frpc.toml
-echo "Tạo file cấu hình frpc.toml..."
-cat <<EOT > /usr/local/frp/frp_${FRP_VERSION}_linux_amd64/frpc.toml
+# Tạo file frpc.ini.template không lưu log
+cat > frpc.ini.template << 'EOF'
 [common]
-server_addr = "$SERVER_IP"
-server_port = 7000
-tcp_mux = true
-tcp_mux.keepalive_interval = 30
+server_addr = 103.77.166.69
+server_port = 9000
+token = Anhduy3112
 
-[$HOSTNAME]
+[socks5]
 type = tcp
-local_port = $LOCAL_PORT
-remote_port = $REMOTE_PORT
-http_user = "$FRP_USER"
-http_passwd = "$FRP_PASS"
-EOT
+remote_port = REPLACE_PORT
+plugin = socks5
+plugin_user = duyhuynh
+plugin_passwd = Anhduy
+EOF
 
-# Tạo file dịch vụ systemd cho FRP client
-echo "Tạo dịch vụ systemd cho FRP client..."
-cat <<EOT | sudo tee /etc/systemd/system/frpc.service
+# Tạo script start_frpc.sh với kiểm tra lỗi
+cat > /opt/start_frpc.sh << 'EOF'
+#!/bin/bash
+if [ ! -f /opt/autorun ]; then
+    echo "Lỗi: File /opt/autorun không tồn tại!"
+    exit 1
+fi
+PORT=$(cat /opt/autorun | grep -oP '\d+(?=:localhost:22)')
+if [ -z "$PORT" ]; then
+    echo "Lỗi: Không tìm thấy cổng trong /opt/autorun!"
+    exit 1
+fi
+if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+    echo "Lỗi: PORT ($PORT) không phải số nguyên!"
+    exit 1
+fi
+sed "s/REPLACE_PORT/$PORT/" /root/frp_0.54.0_linux_amd64/frpc.ini.template > /root/frp_0.54.0_linux_amd64/frpc.ini
+/root/frp_0.54.0_linux_amd64/frpc -c /root/frp_0.54.0_linux_amd64/frpc.ini
+EOF
+chmod +x /opt/start_frpc.sh
+
+# Tạo file dịch vụ systemd
+cat > /etc/systemd/system/frpc.service << 'EOF'
 [Unit]
 Description=FRP Client Service
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c 'until ping -c1 103.77.166.69; do sleep 1; done; /usr/local/frp/frp_0.60.0_linux_amd64/frpc -c /usr/local/frp/frp_0.60.0_linux_amd64/frpc.toml'
+ExecStart=/bin/bash /opt/start_frpc.sh
 Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
-EOT
+EOF
 
-# Kích hoạt và khởi động dịch vụ FRP
-sudo systemctl daemon-reload
-sudo systemctl enable frpc
-sudo systemctl start frpc
+# Kích hoạt và khởi động
+systemctl daemon-reload
+systemctl enable frpc
+systemctl start frpc
 
-# Gửi thông tin client lên API server
-echo "Gửi thông tin client lên server..."
-curl -X POST $API_SERVER/client_data \
--H "Content-Type: application/json" \
--d '{
-    "hostname": "'"$HOSTNAME"'",
-    "remote_port": '"$REMOTE_PORT"',
-    "local_port": '"$LOCAL_PORT"'
-}'
-
-echo "Thông tin client đã được gửi thành công!"
+echo "FRPC cài đặt xong với INI, không lưu log. Kiểm tra: systemctl status frpc"
